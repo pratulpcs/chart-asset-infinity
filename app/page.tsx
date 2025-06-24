@@ -1,6 +1,22 @@
 'use client';
 
 import { useState } from 'react';
+import { ChartBarIcon, PresentationChartLineIcon, ChartPieIcon } from '@heroicons/react/24/solid';
+
+const chartTabs = [
+  { key: 'bar', label: 'Bar Chart', icon: <ChartBarIcon className="w-5 h-5 mr-2" /> },
+  { key: 'line', label: 'Line Chart', icon: <PresentationChartLineIcon className="w-5 h-5 mr-2" /> },
+  { key: 'pie', label: 'Pie Chart', icon: <ChartPieIcon className="w-5 h-5 mr-2" /> },
+  { key: 'doughnut', label: 'Doughnut Chart', icon: <ChartPieIcon className="w-5 h-5 mr-2 rotate-45" /> },
+];
+
+const apiTabs = [
+  { key: 'js', label: 'JavaScript', code: `// Using fetch API\nconst response = await fetch('https://your-api/api/chart?...');\nconst chartBlob = await response.blob();\nconst chartUrl = URL.createObjectURL(chartBlob);` },
+  { key: 'py', label: 'Python', code: `import requests\nurl = 'https://your-api/api/chart?...'\nimg = requests.get(url).content\nwith open('chart.png', 'wb') as f:\n    f.write(img)` },
+  { key: 'curl', label: 'cURL', code: `curl "https://your-api/api/chart?..." --output chart.png` },
+  { key: 'html', label: 'HTML', code: `<img src="/api/chart?..." alt="Chart" />` },
+  { key: 'md', label: 'Markdown', code: `![Chart](/api/chart?...)` },
+];
 
 export default function Home() {
   const [config, setConfig] = useState(`{
@@ -36,6 +52,9 @@ export default function Home() {
 
   const [width, setWidth] = useState('800');
   const [height, setHeight] = useState('600');
+  const [selectedTab, setSelectedTab] = useState('bar');
+  const [apiTab, setApiTab] = useState('js');
+  const [copied, setCopied] = useState(false);
 
   const generateChartUrl = () => {
     const baseUrl =
@@ -172,120 +191,99 @@ export default function Home() {
     }
   };
 
+  const handleTabClick = (key: keyof typeof presetConfigs) => {
+    setSelectedTab(key);
+    setConfig(presetConfigs[key].config);
+  };
+
+  const handleCopy = (text: string) => {
+    navigator.clipboard.writeText(text);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 1200);
+  };
+
   return (
-    <div className="container mx-auto p-6 max-w-6xl">
-      <h1 className="text-4xl font-bold mb-8 text-center text-gray-800">
-        Aseet Infinity Chart Service
-      </h1>
-      
-      <div className="grid md:grid-cols-2 gap-8">
-        {/* Configuration Panel */}
-        <div className="space-y-4">
-          <h2 className="text-2xl font-semibold mb-4">Chart Configuration</h2>
-          
-          {/* Preset buttons */}
-          <div className="flex flex-wrap gap-2 mb-4">
-            {Object.entries(presetConfigs).map(([key, preset]) => (
-              <button
-                key={key}
-                onClick={() => setConfig(preset.config)}
-                className="px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600 text-sm"
-              >
-                {preset.name}
-              </button>
-            ))}
-          </div>
-
-          {/* Dimensions */}
-          <div className="flex gap-4 mb-4">
+    <div className="min-h-screen bg-gray-50">
+      {/* Top Bar */}
+      <header className="w-full bg-white shadow flex items-center justify-between px-8 py-4 mb-8">
+        <h1 className="text-2xl font-bold tracking-tight">Chart</h1>
+        
+      </header>
+      <main className="max-w-6xl mx-auto px-4">
+        <div className="grid md:grid-cols-2 gap-8">
+          {/* Chart Configuration Card */}
+          <section className="bg-white rounded-xl shadow p-6 flex flex-col gap-6">
+            <h2 className="text-xl font-semibold mb-2">Chart Configuration</h2>
+            {/* Chart Type Tabs */}
+            <div className="flex gap-2 mb-2">
+              {chartTabs.map(tab => (
+                <button
+                  key={tab.key}
+                  onClick={() => handleTabClick(tab.key as keyof typeof presetConfigs)}
+                  className={`flex items-center px-4 py-2 rounded-lg font-medium border transition-all ${selectedTab === tab.key ? 'bg-gray-900 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
+                >
+                  {tab.icon}{tab.label}
+                </button>
+              ))}
+            </div>
+            {/* Chart Dimensions */}
+            <div className="flex gap-4">
+              <div className="flex-1">
+                <label className="block text-sm font-medium mb-1">Width</label>
+                <input type="number" value={width} onChange={e => setWidth(e.target.value)} className="w-full px-3 py-2 border rounded-lg bg-gray-50" />
+              </div>
+              <div className="flex-1">
+                <label className="block text-sm font-medium mb-1">Height</label>
+                <input type="number" value={height} onChange={e => setHeight(e.target.value)} className="w-full px-3 py-2 border rounded-lg bg-gray-50" />
+              </div>
+            </div>
+            {/* Chart Config JSON */}
             <div>
-              <label className="block text-sm font-medium mb-1">Width</label>
-              <input
-                type="number"
-                value={width}
-                onChange={(e) => setWidth(e.target.value)}
-                className="w-20 px-2 py-1 border rounded"
+              <label className="block text-sm font-medium mb-2">Chart Configuration (Chart.js JSON)</label>
+              <textarea value={config} onChange={e => setConfig(e.target.value)} className="w-full h-48 p-3 border rounded-lg font-mono text-sm bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-200" />
+            </div>
+            {/* Generated URL */}
+            <div>
+              <label className="block text-sm font-medium mb-2">Generated API URL</label>
+              <div className="flex items-center gap-2">
+                <input type="text" value={generateChartUrl()} readOnly className="flex-1 px-3 py-2 border rounded-lg bg-gray-100 text-xs font-mono" />
+                <button onClick={() => handleCopy(generateChartUrl())} className="px-3 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 text-xs font-semibold">{copied ? 'Copied!' : 'Copy'}</button>
+              </div>
+            </div>
+          </section>
+          {/* Chart Preview Card */}
+          <section className="bg-white rounded-xl shadow p-6 flex flex-col gap-6">
+            <h2 className="text-xl font-semibold mb-2">Chart Preview</h2>
+            <div className="rounded-lg bg-gray-50 border flex items-center justify-center min-h-[320px]">
+              <img
+                src={generateChartUrl()}
+                alt="Generated Chart"
+                className="max-w-full max-h-80 object-contain"
+                onError={e => { e.currentTarget.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjMwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZjBmMGYwIi8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIxNCIgZmlsbD0iIzk5OSIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZHk9Ii4zZW0iPkVycm9yIGxvYWRpbmcgY2hhcnQ8L3RleHQ+PC9zdmc+'; }}
               />
             </div>
+            {/* API Usage Examples */}
             <div>
-              <label className="block text-sm font-medium mb-1">Height</label>
-              <input
-                type="number"
-                value={height}
-                onChange={(e) => setHeight(e.target.value)}
-                className="w-20 px-2 py-1 border rounded"
-              />
+              <h3 className="text-lg font-semibold mb-3">API Usage Examples</h3>
+              <div className="flex gap-2 mb-2">
+                {apiTabs.map(tab => (
+                  <button
+                    key={tab.key}
+                    onClick={() => setApiTab(tab.key)}
+                    className={`px-3 py-1 rounded-lg text-xs font-medium border transition-all ${apiTab === tab.key ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
+                  >
+                    {tab.label}
+                  </button>
+                ))}
+              </div>
+              <div className="relative">
+                <pre className="bg-gray-100 rounded-lg p-4 text-xs font-mono overflow-x-auto whitespace-pre-wrap">{apiTabs.find(t => t.key === apiTab)?.code}</pre>
+                <button onClick={() => handleCopy(apiTabs.find(t => t.key === apiTab)?.code ?? "")} className="absolute top-2 right-2 px-2 py-1 bg-gray-300 rounded text-xs hover:bg-gray-400">{copied ? 'Copied!' : 'Copy'}</button>
+              </div>
             </div>
-          </div>
-
-          {/* Configuration textarea */}
-          <div>
-            <label className="block text-sm font-medium mb-2">
-              Chart Configuration (JSON)
-            </label>
-            <textarea
-              value={config}
-              onChange={(e) => setConfig(e.target.value)}
-              className="w-full h-64 p-3 border rounded font-mono text-sm"
-              placeholder="Enter Chart.js configuration..."
-            />
-          </div>
-
-          {/* Generated URL */}
-          <div>
-            <label className="block text-sm font-medium mb-2">Generated API URL</label>
-            <div className="p-3 bg-gray-100 rounded text-sm break-all">
-              {generateChartUrl()}
-            </div>
-            <button
-              onClick={() => navigator.clipboard.writeText(generateChartUrl())}
-              className="mt-2 px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600"
-            >
-              Copy URL
-            </button>
-          </div>
+          </section>
         </div>
-
-        {/* Preview Panel */}
-        <div className="space-y-4">
-          <h2 className="text-2xl font-semibold mb-4">Preview</h2>
-          <div className="border rounded p-4 bg-white">
-            <img
-              src={generateChartUrl()}
-              alt="Generated Chart"
-              className="w-full h-auto"
-              onError={(e) => {
-                e.currentTarget.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjMwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZjBmMGYwIi8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIxNCIgZmlsbD0iIzk5OSIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZHk9Ii4zZW0iPkVycm9yIGxvYWRpbmcgY2hhcnQ8L3RleHQ+PC9zdmc+';
-              }}
-            />
-          </div>
-
-          {/* Usage Examples */}
-          <div className="mt-8">
-            <h3 className="text-lg font-semibold mb-3">API Usage Examples</h3>
-            <div className="space-y-3 text-sm">
-              <div>
-                <strong>Basic Usage:</strong>
-                <code className="block bg-gray-100 p-2 rounded mt-1">
-                  GET /api/chart?c={"{"}"type":"bar","data":...{"}"}
-                </code>
-              </div>
-              <div>
-                <strong>With Dimensions:</strong>
-                <code className="block bg-gray-100 p-2 rounded mt-1">
-                  GET /api/chart?c={"{"}"type":"line",...{"}"}&w=600&h=400
-                </code>
-              </div>
-              <div>
-                <strong>HTML Image Tag:</strong>
-                <code className="block bg-gray-100 p-2 rounded mt-1">
-                  &lt;img src="/api/chart?c=..." alt="Chart" /&gt;
-                </code>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
+      </main>
     </div>
   );
 }

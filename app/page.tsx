@@ -38,7 +38,8 @@ export default function Home() {
   const [height, setHeight] = useState('600');
 
   const generateChartUrl = () => {
-    const baseUrl = typeof window !== 'undefined' ? window.location.origin : '';
+    const baseUrl =
+      typeof window !== 'undefined' ? window.location.origin : 'http://localhost:3000';
     const params = new URLSearchParams({
       c: config,
       w: width,
@@ -46,7 +47,7 @@ export default function Home() {
     });
     return `${baseUrl}/api/chart?${params.toString()}`;
   };
-
+  
   const presetConfigs = {
     bar: {
       name: "Bar Chart",
